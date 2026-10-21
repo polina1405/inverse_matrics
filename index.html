@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тренажёр: обратная матрица</title>
+<meta name="description" content="Интерактивный тренажёр для студентов колледжа: нахождение обратной матрицы методом присоединения единичной матрицы и через алгебраические дополнения.">
+<style>
+:root{
+  --bg:#f4f6fb;--card:#ffffff;--ink:#1d2433;--muted:#6b7488;--line:#d5dbe8;
+  --pri:#3b5bdb;--pri-ink:#ffffff;--ok:#2b8a3e;--ok-bg:#e6f6ea;--bad:#c92a2a;--bad-bg:#fdecec;
+  --hi:#fff3bf;--piv:#ffd43b;--chip:#eef1f8;--shadow:0 1px 3px rgba(20,30,60,.08),0 6px 18px rgba(20,30,60,.05);
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#12151c;--card:#1b2030;--ink:#e8ebf4;--muted:#9aa3b8;--line:#323a52;
+    --pri:#6c8cff;--pri-ink:#0d1020;--ok:#69db7c;--ok-bg:#16301d;--bad:#ff8787;--bad-bg:#3a1c1c;
+    --hi:#4a3f10;--piv:#a07c00;--chip:#252c42;--shadow:none}
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+header{background:linear-gradient(135deg,#3b5bdb,#7048e8);color:#fff;padding:28px 16px 24px}
+header .in{max-width:980px;margin:0 auto}
+header h1{margin:0 0 6px;font-size:1.7rem;line-height:1.2}
+header p{margin:0;opacity:.92}
+main{max-width:980px;margin:0 auto;padding:16px 14px 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:14px 0;box-shadow:var(--shadow)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.tab{flex:1 1 260px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:12px 14px;border-radius:12px;cursor:pointer;font:inherit;font-weight:600;text-align:left}
+.tab small{display:block;font-weight:400;color:var(--muted)}
+.tab.active{border-color:var(--pri);box-shadow:0 0 0 3px color-mix(in srgb,var(--pri) 22%,transparent)}
+details>summary{cursor:pointer;font-weight:600}
+.formula{font-size:1.15rem;text-align:center;margin:10px 0}
+.row{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+label.lab{display:block;font-size:.85rem;color:var(--muted);margin-bottom:4px}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--ink);padding:8px 14px;font:inherit;cursor:pointer}
+.seg button+button{border-left:1.5px solid var(--line)}
+.seg button.on{background:var(--pri);color:var(--pri-ink);font-weight:600}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+.btn{border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:9px 16px;border-radius:10px;font:inherit;cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--pri)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:600}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 4px}
+.msg{margin-top:8px;font-size:.95rem;min-height:1.2em}
+.msg.bad{color:var(--bad)} .msg.ok{color:var(--ok)}
+/* matrices */
+.scrollx{overflow-x:auto;padding:2px 0}
+.mat{display:inline-block;position:relative;padding:4px 12px;margin:4px 6px;vertical-align:middle}
+.mat::before,.mat::after{content:"";position:absolute;top:0;bottom:0;width:9px;border:2px solid var(--ink)}
+.mat::before{left:0;border-right:0}
+.mat::after{right:0;border-left:0}
+.mat.bars::before{width:0;border-width:0 0 0 2px}
+.mat.bars::after{width:0;border-width:0 2px 0 0}
+.mat table{border-collapse:collapse}
+.mat td{padding:4px 9px;text-align:center;min-width:2.1em;font-variant-numeric:tabular-nums;border-radius:4px}
+.mat td.split{border-right:2px dashed var(--muted)}
+.mat tr.hi td{background:var(--hi)}
+.mat td.piv{background:var(--piv);font-weight:700}
+.mat td.cellhi{background:var(--piv);font-weight:700}
+.mat td.dim{opacity:.28}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.15;margin:0 1px;font-size:.92em}
+.fr .num{border-bottom:1.5px solid currentColor;padding:0 3px}
+.fr .den{padding:0 3px}
+input.cell{width:4.3em;padding:7px 4px;text-align:center;border:1.5px solid var(--line);border-radius:8px;font:inherit;background:var(--card);color:var(--ink)}
+input.cell:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px color-mix(in srgb,var(--pri) 25%,transparent)}
+input.cell.ok{border-color:var(--ok);background:var(--ok-bg)}
+input.cell.bad{border-color:var(--bad);background:var(--bad-bg)}
+.inrow{display:flex;align-items:center;gap:4px;margin:2px 0}
+.inrow .lbl{min-width:3.2em;text-align:right;font-weight:600}
+.eqline{display:flex;align-items:center;flex-wrap:wrap;gap:2px;margin:4px 0}
+/* steps */
+.step{scroll-margin-top:84px}
+.step.active{border-color:var(--pri);box-shadow:0 0 0 3px color-mix(in srgb,var(--pri) 18%,transparent)}
+.step-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.step-head h3{margin:0;font-size:1.05rem;flex:1}
+.badge{background:var(--pri);color:var(--pri-ink);border-radius:999px;min-width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;padding:0 6px}
+.tag{font-size:.8rem;padding:2px 10px;border-radius:999px;font-weight:600}
+.tag.ok{background:var(--ok-bg);color:var(--ok)}
+.op{display:inline-block;background:var(--chip);border:1.5px solid var(--line);border-radius:10px;padding:6px 14px;font-weight:700;font-size:1.1rem;margin:4px 0}
+.why{margin:6px 0;color:var(--muted)}
+.hintbox{background:var(--chip);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:.95rem;min-height:2.6em;overflow-x:auto}
+.detail,details.more{margin-top:8px;font-size:.95rem}
+details.more summary{font-weight:500;color:var(--muted)}
+.calcrow{margin:6px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{background:var(--chip);padding:3px 9px;border-radius:8px;font-size:.88rem;white-space:nowrap}
+.boxes{display:flex;flex-wrap:wrap;gap:8px}
+.box{background:var(--chip);border-radius:10px;padding:8px 12px;line-height:1.9}
+.calc{line-height:1.9}
+.alert{padding:12px 14px;border-radius:10px;margin:8px 0}
+.alert.bad{background:var(--bad-bg);color:var(--bad);font-weight:600}
+.alert.good{background:var(--ok-bg);color:var(--ok);font-weight:600}
+#controls{position:sticky;top:8px;z-index:5}
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;box-shadow:var(--shadow);margin:10px 0}
+.bar .grow{flex:1}
+.progress{flex:1 1 140px;height:10px;background:var(--chip);border-radius:999px;overflow:hidden;min-width:100px}
+.progress i{display:block;height:100%;background:var(--ok);transition:width .3s}
+.empty{text-align:center;color:var(--muted);padding:34px 10px}
+ol{padding-left:22px;margin:8px 0} li{margin:3px 0}
+footer{text-align:center;color:var(--muted);font-size:.85rem;padding:0 12px 30px}
+@media (max-width:560px){
+  header h1{font-size:1.35rem}
+  .card{padding:12px 12px}
+  input.cell{width:3.6em;padding:6px 2px}
+  .mat td{padding:3px 5px}
+}
+</style>
+</head>
+<body>
+<header><div class="in">
+  <h1>Тренажёр: обратная матрица</h1>
+  <p>Два метода — присоединение единичной матрицы (Гаусса–Жордана) и алгебраические дополнения. Смотрите решение по шагам или решайте сами с проверкой.</p>
+</div></header>
+
+<main>
+  <div class="tabs" role="tablist" id="tabs">
+    <button class="tab active" data-method="gauss" role="tab">Метод 1 · Присоединение единичной матрицы<small>[A | E] → [E | A⁻¹], преобразования строк</small></button>
+    <button class="tab" data-method="cof" role="tab">Метод 2 · Алгебраические дополнения<small>A⁻¹ = (1/Δ) · A*</small></button>
+  </div>
+
+  <section class="card" id="theory">
+    <details open><summary>Кратко о методе</summary><div id="theoryBody"></div></details>
+  </section>
+
+  <section class="card" id="setup">
+    <div class="row">
+      <div><label class="lab">Порядок матрицы</label>
+        <div class="seg" id="sizeSeg">
+          <button data-size="2">2×2</button><button data-size="3" class="on">3×3</button><button data-size="4">4×4</button>
+        </div>
+      </div>
+      <div><label class="lab">Режим</label>
+        <div class="seg" id="modeSeg">
+          <button data-mode="learn" class="on">Обучение: смотрю решение</button><button data-mode="practice">Практика: решаю сам</button>
+        </div>
+      </div>
+    </div>
+    <label class="lab">Введите элементы матрицы A (целые, десятичные 0.5 или дроби 1/2)</label>
+    <div class="scrollx" id="matInput"></div>
+    <div class="actions">
+      <button class="btn primary" id="btnStart">Решать ▶</button>
+      <button class="btn" id="btnRandom">🎲 Случайная матрица</button>
+      <button class="btn" id="btnClear">Очистить</button>
+    </div>
+    <div class="msg" id="setupMsg"></div>
+  </section>
+
+  <section id="controls"></section>
+  <section id="steps"></section>
+  <section id="summary"></section>
+</main>
+<footer>Тренажёр по линейной алгебре для студентов колледжа · работает полностью в браузере</footer>
+<noscript><p style="text-align:center">Для работы тренажёра необходим JavaScript.</p></noscript>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+const SUBD='₀₁₂₃₄₅₆₇₈₉';
+const sb=n=>String(n).split('').map(d=>SUBD[+d]).join('');
+const R=i=>'R'+sb(i+1);
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){const t=a%b;a=b;b=t}return a||1};
+
+/* ---------- Дроби ---------- */
+class Fr{
+  constructor(n,d=1){
+    if(d===0)throw new Error('div0');
+    if(!Number.isSafeInteger(n)||!Number.isSafeInteger(d))throw new Error('overflow');
+    if(d<0){n=-n;d=-d}
+    const g=gcd(n,d);this.n=n/g;this.d=d/g;
+  }
+  add(o){return new Fr(this.n*o.d+o.n*this.d,this.d*o.d)}
+  sub(o){return new Fr(this.n*o.d-o.n*this.d,this.d*o.d)}
+  mul(o){return new Fr(this.n*o.n,this.d*o.d)}
+  div(o){return new Fr(this.n*o.d,this.d*o.n)}
+  neg(){return new Fr(-this.n,this.d)}
+  isZero(){return this.n===0}
+  eq(o){return this.n===o.n&&this.d===o.d}
+}
+const F=(n,d=1)=>new Fr(n,d);
+const ZERO=F(0),ONE=F(1);
+const fmt=x=>(x.n<0?'−':'')+Math.abs(x.n)+(x.d!==1?'/'+x.d:'');
+const fmtIn=x=>(x.n<0?'-':'')+Math.abs(x.n)+(x.d!==1?'/'+x.d:'');
+const par=x=>(x.n<0||x.d!==1)?'('+fmt(x)+')':fmt(x);
+function frHTML(x){
+  if(typeof x==='string')return x;
+  const s=x.n<0?'−':'',a=Math.abs(x.n);
+  if(x.d===1)return s+a;
+  return `${s}<span class="fr"><span class="num">${a}</span><span class="den">${x.d}</span></span>`;
+}
+function parseDec(t){
+  const m=/^([+-]?)(\d+)?(?:\.(\d+))?$/.exec(t);
+  if(!m||(m[2]===undefined&&m[3]===undefined))return null;
+  const ip=m[2]||'0',fp=m[3]||'';
+  if(ip.length+fp.length>9)return null;
+  const n=parseInt(ip+fp,10)*(m[1]==='-'?-1:1);
+  return new Fr(n,Math.pow(10,fp.length));
+}
+function parseNum(s){
+  s=String(s).trim().replace(/[−–—]/g,'-').replace(/,/g,'.').replace(/\s+/g,'');
+  if(!s)return null;
+  const p=s.split('/');
+  if(p.length>2)return null;
+  const a=parseDec(p[0]);if(!a)return null;
+  if(p.length===1)return a;
+  const b=parseDec(p[1]);if(!b||b.isZero())return null;
+  return a.div(b);
+}
+
+/* ---------- Матрицы ---------- */
+const cloneM=M=>M.map(r=>r.slice());
+const identity=n=>Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?ONE:ZERO));
+const minorM=(M,i,j)=>M.filter((_,r)=>r!==i).map(row=>row.filter((_,c)=>c!==j));
+function det(M){
+  const n=M.length;
+  if(n===1)return M[0][0];
+  if(n===2)return M[0][0].mul(M[1][1]).sub(M[0][1].mul(M[1][0]));
+  let s=ZERO;
+  for(let j=0;j<n;j++){
+    const t=M[0][j].mul(det(minorM(M,0,j)));
+    s=j%2?s.sub(t):s.add(t);
+  }
+  return s;
+}
+function mulM(A,B){
+  return A.map((row,i)=>B[0].map((_,j)=>row.reduce((s,x,k)=>s.add(x.mul(B[k][j])),ZERO)));
+}
+const transpose=M=>M[0].map((_,j)=>M.map(r=>r[j]));
+const isIdentity=M=>M.every((r,i)=>r.every((x,j)=>x.eq(i===j?ONE:ZERO)));
+
+function matHTML(M,o={}){
+  const {split=null,hiRows=[],pivot=null,hiCells=[],dimRows=[],dimCols=[],bars=false}=o;
+  let h=`<div class="mat${bars?' bars':''}"><table>`;
+  M.forEach((row,i)=>{
+    h+=`<tr${hiRows.includes(i)?' class="hi"':''}>`;
+    row.forEach((x,j)=>{
+      let c='';
+      if(split!==null&&j===split-1)c+=' split';
+      if(pivot&&pivot[0]===i&&pivot[1]===j)c+=' piv';
+      if(hiCells.some(p=>p[0]===i&&p[1]===j))c+=' cellhi';
+      if(dimRows.includes(i)||dimCols.includes(j))c+=' dim';
+      h+=`<td class="${c.trim()}">${frHTML(x)}</td>`;
+    });
+    h+='</tr>';
+  });
+  return h+'</table></div>';
+}
+const ADJ='A<sup>*</sup>', INV='A<sup>−1</sup>';
+
+/* ---------- Метод 1: присоединение единичной матрицы ---------- */
+function gStage(o){
+  const n=o.n;
+  return {
+    title:o.title,
+    intro:`<div class="op">${o.op}</div><p class="why">${o.why}</p>`,
+    before:matHTML(o.before,{split:n,hiRows:o.rows,pivot:o.pivot}),
+    after:matHTML(o.after,{split:n,hiRows:o.rows,pivot:o.pivot}),
+    detail:o.rows.map(r=>`<div class="calcrow"><b>${R(r)}:</b> `+o.after[r].map((_,k)=>`<span class="chip">${o.calc(r,k,true)}</span>`).join('')+'</div>').join(''),
+    input:{
+      rowLabels:o.rows.map(r=>R(r)+' ='),rows:o.rows.length,cols:2*n,split:n,
+      expected:o.rows.map(r=>o.after[r]),
+      hint:(i,j)=>`<b>${R(o.rows[i])}</b>, столбец ${j+1}: ${o.calc(o.rows[i],j,false)} = ?`
+    }
+  };
+}
+function buildGauss(A){
+  const n=A.length;
+  let M=A.map((row,i)=>[...row,...Array.from({length:n},(_,j)=>i===j?ONE:ZERO)]);
+  const st=[];
+  st.push({
+    title:'Составляем расширенную матрицу [A | E]',
+    intro:'<p>Справа от матрицы <i>A</i> дописываем единичную матрицу <i>E</i> того же порядка. Дальше будем преобразовывать строки так, чтобы слева получилась <i>E</i>. Тогда справа окажется '+INV+'.</p>',
+    after:matHTML(M,{split:n})
+  });
+  let singular=false;
+  for(let c=0;c<n&&!singular;c++){
+    if(M[c][c].isZero()){
+      let r=-1;
+      for(let k=c+1;k<n;k++){if(!M[k][c].isZero()){r=k;break}}
+      if(r<0){
+        singular=true;
+        st.push({
+          title:'Обратной матрицы не существует',
+          intro:`<div class="alert bad">В столбце ${c+1} на диагонали и ниже остались одни нули — ведущий элемент получить невозможно. Значит, det A = 0, матрица A вырождена и обратной у неё нет.</div>`,
+          after:matHTML(M,{split:n})
+        });
+        break;
+      }
+      const before=cloneM(M);
+      const rr=r;
+      [M[c],M[rr]]=[M[rr],M[c]];
+      const after=cloneM(M);
+      st.push(gStage({n,title:`Меняем местами строки ${R(c)} и ${R(rr)}`,op:`${R(c)} ↔ ${R(rr)}`,
+        why:`На диагонали в столбце ${c+1} стоит 0, а в строке ${R(rr)} в этом столбце — ненулевое число. Меняем строки местами.`,
+        before,after,rows:[c,rr],pivot:[c,c],
+        calc:(row,k)=>{const src=row===c?rr:c;return `из ${R(src)}: ${fmt(before[src][k])}`}}));
+    }
+    const p=M[c][c];
+    if(!p.eq(ONE)){
+      const before=cloneM(M);
+      M[c]=M[c].map(x=>x.div(p));
+      const after=cloneM(M);
+      st.push(gStage({n,title:`Получаем 1 на диагонали (столбец ${c+1})`,op:`${R(c)} ← ${R(c)} : ${par(p)}`,
+        why:`Делим всю строку ${R(c)} на ведущий элемент ${fmt(p)}, чтобы в позиции (${c+1}, ${c+1}) стояла единица.`,
+        before,after,rows:[c],pivot:[c,c],
+        calc:(row,k,full)=>`${fmt(before[row][k])} : ${par(p)}`+(full?` = ${fmt(after[row][k])}`:'')}));
+    }
+    for(let r=0;r<n;r++){
+      if(r===c)continue;
+      const f=M[r][c];
+      if(f.isZero())continue;
+      const before=cloneM(M);
+      M[r]=M[r].map((x,k)=>x.sub(f.mul(M[c][k])));
+      const after=cloneM(M);
+      const pos=f.n>0;
+      const rowR=r;
+      st.push(gStage({n,title:`Обнуляем элемент в позиции (${r+1}, ${c+1})`,
+        op:pos?`${R(r)} ← ${R(r)} − ${par(f)}·${R(c)}`:`${R(r)} ← ${R(r)} + ${par(f.neg())}·${R(c)}`,
+        why:`Сейчас там стоит ${fmt(f)}. ${pos?'Вычитаем из':'Прибавляем к'} строк${pos?'и':'е'} ${R(r)} строку ${R(c)}, умноженную на ${fmt(pos?f:f.neg())}.`,
+        before,after,rows:[r],pivot:[c,c],
+        calc:(row,k,full)=>{
+          const x=before[row][k],y=before[c][k];
+          const t=pos?`${fmt(x)} − ${par(f)}·${par(y)}`:`${fmt(x)} + ${par(f.neg())}·${par(y)}`;
+          return t+(full?` = ${fmt(after[rowR][k])}`:'');
+        }}));
+    }
+  }
+  if(!singular){
+    const inv=M.map(row=>row.slice(n));
+    st.push({
+      title:'Результат',
+      intro:'<p>Слева получилась единичная матрица <i>E</i>, поэтому справа стоит обратная матрица.</p>',
+      after:matHTML(M,{split:n})+`<div class="eqline">${INV} = ${matHTML(inv)}</div>`
+    });
+    const P=mulM(A,inv);
+    st.push({
+      title:'Проверка: A · A⁻¹ = E',
+      intro:'<p>Перемножаем исходную матрицу и найденную обратную — должна получиться единичная матрица.</p>',
+      after:`<div class="eqline">${matHTML(A)} · ${matHTML(inv)} = ${matHTML(P)}</div>`+(isIdentity(P)?'<div class="alert good">Получили E — обратная матрица найдена верно ✓</div>':'')
+    });
+  }
+  return {stages:st};
+}
+
+/* ---------- Метод 2: алгебраические дополнения ---------- */
+function detLines(A,D){
+  const n=A.length,e=(i,j)=>A[i][j];
+  if(n===2){
+    const l1='Δ = a<sub>11</sub>·a<sub>22</sub> − a<sub>12</sub>·a<sub>21</sub>';
+    const l2=`= ${par(e(0,0))}·${par(e(1,1))} − ${par(e(0,1))}·${par(e(1,0))}`;
+    return {hint:`${l1}<br>${l2} = ?`,full:`${l1}<br>${l2} = <b>${fmt(D)}</b>`};
+  }
+  const t=(a,b,c)=>`${par(e(...a))}·${par(e(...b))}·${par(e(...c))}`;
+  const v=(a,b,c)=>e(...a).mul(e(...b)).mul(e(...c));
+  const T=[[[0,0],[1,1],[2,2]],[[0,1],[1,2],[2,0]],[[0,2],[1,0],[2,1]],[[0,2],[1,1],[2,0]],[[0,0],[1,2],[2,1]],[[0,1],[1,0],[2,2]]];
+  const l1='Δ = a<sub>11</sub>a<sub>22</sub>a<sub>33</sub> + a<sub>12</sub>a<sub>23</sub>a<sub>31</sub> + a<sub>13</sub>a<sub>21</sub>a<sub>32</sub> − a<sub>13</sub>a<sub>22</sub>a<sub>31</sub> − a<sub>11</sub>a<sub>23</sub>a<sub>32</sub> − a<sub>12</sub>a<sub>21</sub>a<sub>33</sub>';
+  const l2='= '+T.map((x,i)=>(i===0?'':(i<3?' + ':' − '))+t(...x)).join('');
+  const vals=T.map(x=>v(...x));
+  const l3='= '+vals.map((x,i)=>(i===0?'':(i<3?' + ':' − '))+par(x)).join('');
+  return {hint:`<small>Правило треугольников (Саррюса):</small><br>${l1}<br>${l2}<br>${l3} = ?`,
+          full:`<small>Правило треугольников (Саррюса):</small><br>${l1}<br>${l2}<br>${l3}<br>= <b>${fmt(D)}</b>`};
+}
+function buildCof(A){
+  const n=A.length,D=det(A),st=[];
+  st.push({
+    title:'План решения',
+    intro:'<p>Формула обратной матрицы:</p><p class="formula">'+INV+' = <span class="fr"><span class="num">1</span><span class="den">Δ</span></span> · '+ADJ+'</p>'+
+      '<p>где Δ = det A, а '+ADJ+' — присоединённая матрица (транспонированная матрица алгебраических дополнений).</p>'+
+      '<ol><li>Найти определитель Δ. Если Δ = 0 — обратной матрицы нет.</li><li>Найти миноры M<sub>ij</sub>.</li><li>Найти алгебраические дополнения A<sub>ij</sub> = (−1)<sup>i+j</sup>·M<sub>ij</sub>.</li><li>Транспонировать — получить '+ADJ+'.</li><li>Разделить каждый элемент на Δ.</li><li>Проверить: A·'+INV+' = E.</li></ol>',
+    after:`<div class="eqline">A = ${matHTML(A)}</div>`
+  });
+  const dl=detLines(A,D);
+  st.push({
+    title:'Вычисляем определитель Δ = det A',
+    intro:'<p>Обратная матрица существует только если Δ ≠ 0.</p>',
+    before:`<div class="eqline">Δ = ${matHTML(A,{bars:true})}</div>`,
+    after:`<div class="eqline">Δ = ${matHTML(A,{bars:true})} = <b>&nbsp;${frHTML(D)}</b></div>`,
+    detail:`<div class="calc">${dl.full}</div>`,
+    input:{rowLabels:['Δ ='],rows:1,cols:1,expected:[[D]],hint:()=>dl.hint}
+  });
+  if(D.isZero()){
+    st.push({title:'Обратной матрицы не существует',
+      intro:'<div class="alert bad">Δ = 0, значит матрица A вырождена и обратной матрицы у неё нет.</div>',after:''});
+    return {stages:st};
+  }
+  const ij=(i,j)=>`${i+1}${j+1}`;
+  /* миноры */
+  const Mm=A.map((row,i)=>row.map((_,j)=>det(minorM(A,i,j))));
+  let md='<div class="boxes">';
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+    const s=minorM(A,i,j);
+    if(n===2){
+      md+=`<div class="box">M<sub>${ij(i,j)}</sub> = a<sub>${2-i}${2-j}</sub> = <b>${fmt(Mm[i][j])}</b></div>`;
+    }else{
+      const [[a,b],[c,d]]=s;
+      md+=`<div class="box">M<sub>${ij(i,j)}</sub> = ${matHTML(s,{bars:true})} = ${par(a)}·${par(d)} − ${par(b)}·${par(c)} = <b>${fmt(Mm[i][j])}</b></div>`;
+    }
+  }
+  md+='</div>';
+  st.push({
+    title:'Находим миноры M\u1d62\u2c7c',
+    intro:'<p>Минор M<sub>ij</sub> — определитель матрицы, которая остаётся после вычёркивания <i>i</i>-й строки и <i>j</i>-го столбца. Нажмите на ячейку — увидите, что вычёркивать.</p>',
+    before:`<div class="eqline">A = ${matHTML(A)}</div>`,
+    after:`<div class="eqline">M = ${matHTML(Mm)}</div>`,
+    detail:md,
+    input:{rows:n,cols:n,expected:Mm,hint:(i,j)=>{
+      const s=minorM(A,i,j);
+      let h=`Вычёркиваем строку ${i+1} и столбец ${j+1}:<br>${matHTML(A,{dimRows:[i],dimCols:[j]})}<br>`;
+      if(n===2)h+=`Остаётся одно число: M<sub>${ij(i,j)}</sub> = ?`;
+      else{const [[a,b],[c,d]]=s;h+=`M<sub>${ij(i,j)}</sub> = ${matHTML(s,{bars:true})} = ${par(a)}·${par(d)} − ${par(b)}·${par(c)} = ?`}
+      return h;
+    }}
+  });
+  /* алгебраические дополнения */
+  const C=Mm.map((row,i)=>row.map((m,j)=>(i+j)%2?m.neg():m));
+  const signs=Mm.map((row,i)=>row.map((_,j)=>(i+j)%2?'−':'+'));
+  let cd='<div class="boxes">';
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+    const sg=(i+j)%2?'−':'+';
+    cd+=`<div class="box">A<sub>${ij(i,j)}</sub> = (−1)<sup>${i+1}+${j+1}</sup>·M<sub>${ij(i,j)}</sub> = ${sg}${par(Mm[i][j])} = <b>${fmt(C[i][j])}</b></div>`;
+  }
+  cd+='</div>';
+  st.push({
+    title:'Находим алгебраические дополнения A\u1d62\u2c7c',
+    intro:'<p>A<sub>ij</sub> = (−1)<sup>i+j</sup>·M<sub>ij</sub>. Знаки расставляются «шахматкой»: на местах с чётной суммой <i>i+j</i> знак «+», с нечётной — «−».</p>',
+    before:`<div class="eqline">знаки ${matHTML(signs)} миноры ${matHTML(Mm)}</div>`,
+    after:`<div class="eqline">знаки ${matHTML(signs)} → (A<sub>ij</sub>) = ${matHTML(C)}</div>`,
+    detail:cd,
+    input:{rows:n,cols:n,expected:C,hint:(i,j)=>`A<sub>${ij(i,j)}</sub> = (−1)<sup>${i+1}+${j+1}</sup>·M<sub>${ij(i,j)}</sub> = ${(i+j)%2?'−':'+'}${par(Mm[i][j])} = ?`}
+  });
+  /* транспонирование */
+  const T=transpose(C);
+  st.push({
+    title:'Транспонируем: получаем присоединённую матрицу '+ADJ,
+    intro:'<p>Строки матрицы алгебраических дополнений записываем как столбцы: элемент из позиции (<i>i</i>, <i>j</i>) переходит в позицию (<i>j</i>, <i>i</i>).</p>',
+    before:`<div class="eqline">(A<sub>ij</sub>) = ${matHTML(C)}</div>`,
+    after:`<div class="eqline">${ADJ} = (A<sub>ij</sub>)<sup>T</sup> = ${matHTML(T)}</div>`,
+    detail:'<p>Первая строка матрицы алгебраических дополнений становится первым столбцом, вторая строка — вторым столбцом и т. д.</p>',
+    input:{rows:n,cols:n,expected:T,hint:(i,j)=>`${ADJ}<sub>${ij(i,j)}</sub> = A<sub>${ij(j,i)}</sub>. Берём элемент из строки ${j+1}, столбца ${i+1}:<br>${matHTML(C,{hiCells:[[j,i]]})}`}
+  });
+  /* обратная */
+  const inv=T.map(row=>row.map(x=>x.div(D)));
+  st.push({
+    title:'Делим на определитель: '+'A⁻¹ = (1/Δ)·A*',
+    intro:`<p>Умножаем ${ADJ} на 1/Δ = 1/${par(D)}, то есть делим каждый элемент на ${fmt(D)}. Сокращайте дроби.</p>`,
+    before:`<div class="eqline">${ADJ} = ${matHTML(T)}, Δ = ${frHTML(D)}</div>`,
+    after:`<div class="eqline">${INV} = <span class="fr"><span class="num">1</span><span class="den">${fmt(D)}</span></span> · ${matHTML(T)} = ${matHTML(inv)}</div>`,
+    detail:'<div class="boxes">'+inv.map((row,i)=>row.map((x,j)=>`<div class="box">${fmt(T[i][j])} : ${par(D)} = <b>${fmt(x)}</b></div>`).join('')).join('')+'</div>',
+    input:{rows:n,cols:n,expected:inv,hint:(i,j)=>`Элемент (${i+1}, ${j+1}): ${fmt(T[i][j])} : ${par(D)} = ?`}
+  });
+  const P=mulM(A,inv);
+  st.push({
+    title:'Проверка: A · A⁻¹ = E',
+    intro:'<p>Перемножаем исходную матрицу и найденную обратную — должна получиться единичная матрица.</p>',
+    after:`<div class="eqline">${matHTML(A)} · ${matHTML(inv)} = ${matHTML(P)}</div>`+(isIdentity(P)?'<div class="alert good">Получили E — обратная матрица найдена верно ✓</div>':'')
+  });
+  return {stages:st};
+}
+
+/* ---------- Состояние ---------- */
+const S={method:'gauss',mode:'learn',n:3,stages:[],shown:0,solved:[],tries:[],usedShow:[],errors:0,shows:0,firstTry:0};
+
+function theoryHTML(m){
+  if(m==='gauss')return `
+    <p><b>Идея.</b> Приписываем к матрице <i>A</i> справа единичную матрицу <i>E</i> и элементарными преобразованиями <b>только строк</b> превращаем левую часть в <i>E</i>. Тогда правая часть превратится в ${INV}:</p>
+    <p class="formula">[ A | E ] → [ E | ${INV} ]</p>
+    <p><b>Допустимые операции:</b> поменять строки местами; умножить (разделить) строку на число, не равное нулю; прибавить к строке другую строку, умноженную на число.</p>
+    <ol><li>Записать [A | E].</li><li>Для каждого столбца по очереди: получить на диагонали <b>1</b> (разделить строку на ведущий элемент) и <b>обнулить</b> остальные элементы столбца (и выше, и ниже диагонали).</li><li>Когда слева появилась <i>E</i>, справа записана ${INV}.</li><li>Если ведущий элемент получить невозможно (в столбце одни нули) — det A = 0, обратной матрицы нет.</li></ol>`;
+  return `
+    <p><b>Формула.</b> Если Δ = det A ≠ 0, то</p>
+    <p class="formula">${INV} = <span class="fr"><span class="num">1</span><span class="den">Δ</span></span> · ${ADJ}, &nbsp; ${ADJ} = (A<sub>ij</sub>)<sup>T</sup></p>
+    <ol><li>Вычислить Δ (для 2×2: ad − bc; для 3×3 — правило треугольников).</li><li>Для каждого элемента найти минор M<sub>ij</sub> — определитель после вычёркивания <i>i</i>-й строки и <i>j</i>-го столбца.</li><li>A<sub>ij</sub> = (−1)<sup>i+j</sup>·M<sub>ij</sub>.</li><li>Транспонировать матрицу алгебраических дополнений.</li><li>Разделить на Δ.</li></ol>
+    <p><small>Для матрицы 2×2 это даёт короткую формулу: ${INV} = <span class="fr"><span class="num">1</span><span class="den">ad−bc</span></span> · (d, −b; −c, a).</small></p>`;
+}
+
+/* ---------- Ввод исходной матрицы ---------- */
+function buildMatInput(){
+  const old=[...document.querySelectorAll('#matInput input')].map(inp=>({i:+inp.dataset.i,j:+inp.dataset.j,v:inp.value}));
+  const n=S.n;
+  let h='<div class="mat"><table>';
+  for(let i=0;i<n;i++){
+    h+='<tr>';
+    for(let j=0;j<n;j++)h+=`<td><input class="cell" type="text" inputmode="text" autocomplete="off" spellcheck="false" data-i="${i}" data-j="${j}" aria-label="a${i+1}${j+1}"></td>`;
+    h+='</tr>';
+  }
+  h+='</table></div>';
+  $('#matInput').innerHTML=h;
+  old.forEach(o=>{const el=document.querySelector(`#matInput input[data-i="${o.i}"][data-j="${o.j}"]`);if(el)el.value=o.v});
+}
+function fillMatrix(M){
+  M.forEach((row,i)=>row.forEach((x,j)=>{const el=document.querySelector(`#matInput input[data-i="${i}"][data-j="${j}"]`);if(el){el.value=fmtIn(x);el.classList.remove('bad')}}));
+}
+function readMatrix(){
+  const n=S.n,M=[];let ok=true;
+  for(let i=0;i<n;i++){
+    const row=[];
+    for(let j=0;j<n;j++){
+      const el=document.querySelector(`#matInput input[data-i="${i}"][data-j="${j}"]`);
+      const v=parseNum(el.value);
+      if(v===null){ok=false;el.classList.add('bad')}else el.classList.remove('bad');
+      row.push(v);
+    }
+    M.push(row);
+  }
+  const msg=$('#setupMsg');
+  if(!ok){msg.className='msg bad';msg.textContent='Заполните все ячейки числами: целыми, десятичными (0.5) или дробями (1/2).';return null}
+  msg.className='msg';msg.textContent='';
+  return M;
+}
+function randomMatrix(n){
+  const maxDet=n===4?3:5,lo=n===2?-4:-2,hi=n===2?5:3;
+  const ri=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+  for(let t=0;t<1500;t++){
+    const M=Array.from({length:n},()=>Array.from({length:n},()=>F(ri(lo,hi))));
+    const D=det(M);
+    if(!D.isZero()&&Math.abs(D.n)<=maxDet)return M;
+  }
+  const M=identity(n);
+  for(let k=0;k<n*3;k++){
+    const a=ri(0,n-1),b=ri(0,n-1);if(a===b)continue;
+    const f=F(ri(-2,2)||1);
+    M[a]=M[a].map((x,j)=>x.add(f.mul(M[b][j])));
+  }
+  return M;
+}
+
+/* ---------- Запуск и прохождение ---------- */
+function resetProgress(){
+  S.stages=[];S.shown=0;S.solved=[];S.tries=[];S.usedShow=[];S.errors=0;S.shows=0;S.firstTry=0;
+}
+function start(){
+  const A=readMatrix();if(!A)return;
+  let built;
+  try{built=S.method==='gauss'?buildGauss(A):buildCof(A)}
+  catch(e){const m=$('#setupMsg');m.className='msg bad';m.textContent='Слишком большие числа — введите значения поменьше.';return}
+  resetProgress();
+  S.stages=built.stages;
+  if(S.mode==='learn')S.shown=1;else advance();
+  render();
+  $('#controls').scrollIntoView({behavior:'smooth',block:'start'});
+  focusActive();
+}
+function advance(){
+  while(S.shown<S.stages.length){
+    const idx=S.shown;S.shown++;
+    if(S.stages[idx].input)break;
+    S.solved[idx]=true;
+  }
+}
+function focusActive(){
+  if(S.mode!=='practice')return;
+  const el=document.querySelector('.step.active input.cell');
+  if(el)setTimeout(()=>el.focus({preventScroll:true}),350);
+}
+function scrollLast(){
+  const last=$('#steps').lastElementChild;
+  if(last)last.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---------- Отрисовка ---------- */
+function inputBlock(st){
+  const g=st.input;
+  const cellHTML=(r,c)=>`<td class="${g.split&&c===g.split-1?'split':''}"><input class="cell" type="text" inputmode="text" autocomplete="off" spellcheck="false" data-r="${r}" data-c="${c}"></td>`;
+  let h='<div class="scrollx">';
+  if(g.rowLabels){
+    for(let r=0;r<g.rows;r++){
+      h+=`<div class="inrow"><span class="lbl">${g.rowLabels[r]}</span><div class="mat"><table><tr>`;
+      for(let c=0;c<g.cols;c++)h+=cellHTML(r,c);
+      h+='</tr></table></div></div>';
+    }
+  }else{
+    h+='<div class="mat"><table>';
+    for(let r=0;r<g.rows;r++){h+='<tr>';for(let c=0;c<g.cols;c++)h+=cellHTML(r,c);h+='</tr>'}
+    h+='</table></div>';
+  }
+  h+='</div>';
+  h+='<div class="hintbox">💡 Нажмите на ячейку — здесь появится подсказка по вычислению.</div>';
+  h+='<div class="actions"><button class="btn primary" data-act="check">Проверить</button><button class="btn" data-act="show">Показать ответ</button></div><div class="msg"></div>';
+  return h;
+}
+function renderStage(i){
+  const st=S.stages[i],practice=S.mode==='practice';
+  const solved=!practice||!!S.solved[i];
+  const el=document.createElement('section');
+  el.className='card step'+(!solved?' active':'');
+  el.dataset.idx=i;
+  let h=`<div class="step-head"><span class="badge">${i+1}</span><h3>${st.title}</h3>`;
+  if(practice&&st.input&&solved)h+='<span class="tag ok">✓ верно</span>';
+  h+='</div>'+(st.intro||'');
+  if(!solved){
+    h+=`<div class="scrollx">${st.before||''}</div>`+inputBlock(st);
+  }else{
+    h+=`<div class="scrollx">${st.after||''}</div>`;
+    if(st.detail)h+=practice?`<details class="more"><summary>Как это считается</summary>${st.detail}</details>`:`<div class="detail scrollx">${st.detail}</div>`;
+  }
+  el.innerHTML=h;
+  return el;
+}
+function renderControls(){
+  const c=$('#controls');
+  if(!S.stages.length){c.innerHTML='';return}
+  const total=S.stages.length;
+  if(S.mode==='learn'){
+    c.innerHTML=`<div class="bar"><button class="btn" data-ctl="back" ${S.shown<=1?'disabled':''}>◀ Назад</button>
+      <span class="grow">Шаг ${S.shown} из ${total}</span>
+      <button class="btn primary" data-ctl="next" ${S.shown>=total?'disabled':''}>Следующий шаг ▶</button>
+      <button class="btn" data-ctl="all" ${S.shown>=total?'disabled':''}>Показать всё</button></div>`;
+  }else{
+    const inputs=S.stages.map((s,i)=>s.input?i:-1).filter(i=>i>=0);
+    const done=inputs.filter(i=>S.solved[i]).length;
+    const pct=inputs.length?Math.round(done/inputs.length*100):100;
+    c.innerHTML=`<div class="bar"><div class="progress"><i style="width:${pct}%"></i></div>
+      <span>Решено: ${done} из ${inputs.length}</span><span>Ошибок: ${S.errors}</span>
+      <button class="btn" data-ctl="restart">Заново</button></div>`;
+  }
+}
+function renderSummary(){
+  const el=$('#summary');el.innerHTML='';
+  if(!S.stages.length||S.shown<S.stages.length)return;
+  const practice=S.mode==='practice';
+  if(practice&&!S.stages.every((s,i)=>S.solved[i]))return;
+  const total=S.stages.filter(s=>s.input).length;
+  let h='<div class="card summary">';
+  if(practice)h+=`<h3>🎉 Тренировка завершена</h3><p>Верно с первой попытки: <b>${S.firstTry} из ${total}</b> шагов · ошибочных проверок: <b>${S.errors}</b> · показано ответов: <b>${S.shows}</b>.</p>`;
+  else h+='<h3>Решение завершено</h3><p>Теперь попробуйте повторить то же самое самостоятельно в режиме практики.</p>';
+  h+='<div class="actions">'+(practice?'<button class="btn" data-ctl="restart">Повторить с этой матрицей</button>':'<button class="btn primary" data-ctl="topractice">Перейти к практике</button>')+'<button class="btn" data-ctl="newrandom">Новая случайная матрица</button></div></div>';
+  el.innerHTML=h;
+}
+function render(){
+  const box=$('#steps');box.innerHTML='';
+  if(!S.stages.length){
+    box.innerHTML='<div class="card empty">Введите матрицу выше (или нажмите «Случайная матрица») и нажмите «Решать».</div>';
+    $('#controls').innerHTML='';$('#summary').innerHTML='';return;
+  }
+  for(let i=0;i<S.shown;i++)box.appendChild(renderStage(i));
+  renderControls();renderSummary();
+}
+
+/* ---------- Проверка ответов ---------- */
+function checkStage(i,el){
+  const st=S.stages[i],g=st.input;
+  const msg=el.querySelector('.msg');
+  let allOk=true,badFormat=false;
+  el.querySelectorAll('input.cell').forEach(inp=>{
+    const r=+inp.dataset.r,c=+inp.dataset.c;
+    const v=parseNum(inp.value);
+    inp.classList.remove('ok','bad');
+    if(v===null){inp.classList.add('bad');allOk=false;badFormat=true}
+    else if(v.eq(g.expected[r][c]))inp.classList.add('ok');
+    else{inp.classList.add('bad');allOk=false}
+  });
+  if(allOk){
+    S.solved[i]=true;
+    if(!S.tries[i]&&!S.usedShow[i])S.firstTry++;
+    advance();render();scrollLast();focusActive();
+    if(S.shown===S.stages.length&&S.stages.every((s,k)=>S.solved[k])){const sm=$('#summary');if(sm.firstChild)setTimeout(()=>sm.scrollIntoView({behavior:'smooth',block:'nearest'}),300)}
+  }else{
+    S.tries[i]=(S.tries[i]||0)+1;S.errors++;
+    msg.className='msg bad';
+    msg.textContent=badFormat?'Введите числа: целое, десятичное (0.5) или дробь (1/2). Пустые и неверные ячейки подсвечены.':'Есть ошибки — красные ячейки неверны. Нажмите на ячейку, чтобы увидеть подсказку.';
+    const t=$('#controls .bar span:nth-of-type(2)');if(t)t.textContent='Ошибок: '+S.errors;
+  }
+}
+function showAnswer(i,el){
+  const g=S.stages[i].input;
+  el.querySelectorAll('input.cell').forEach(inp=>{
+    inp.value=fmtIn(g.expected[+inp.dataset.r][+inp.dataset.c]);
+    inp.classList.remove('bad','ok');
+  });
+  if(!S.usedShow[i]){S.usedShow[i]=true;S.shows++}
+  const msg=el.querySelector('.msg');
+  msg.className='msg ok';msg.textContent='Ответ подставлен. Разберитесь, как он получен, и нажмите «Проверить», чтобы перейти дальше.';
+}
+
+/* ---------- Режимы и методы ---------- */
+function setMode(m){
+  S.mode=m;
+  document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
+  if(S.stages.length)start();
+}
+function setSize(n){
+  S.n=n;
+  document.querySelectorAll('#sizeSeg button').forEach(b=>b.classList.toggle('on',+b.dataset.size===n));
+  buildMatInput();resetProgress();render();
+}
+function setMethod(m){
+  S.method=m;
+  document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.toggle('active',t.dataset.method===m));
+  const b4=document.querySelector('#sizeSeg button[data-size="4"]');
+  b4.disabled=(m==='cof');
+  if(m==='cof'&&S.n>3)setSize(3);
+  $('#theoryBody').innerHTML=theoryHTML(m);
+  resetProgress();render();
+}
+function doCtl(name){
+  switch(name){
+    case 'back':if(S.shown>1){S.shown--;render()}break;
+    case 'next':if(S.shown<S.stages.length){S.shown++;render();scrollLast()}break;
+    case 'all':S.shown=S.stages.length;render();scrollLast();break;
+    case 'restart':start();break;
+    case 'newrandom':fillMatrix(randomMatrix(S.n));start();break;
+    case 'topractice':setMode('practice');break;
+  }
+}
+
+/* ---------- События ---------- */
+document.addEventListener('click',e=>{
+  const ctl=e.target.closest('[data-ctl]');
+  if(ctl&&!ctl.disabled){doCtl(ctl.dataset.ctl);return}
+  const act=e.target.closest('[data-act]');
+  if(act){
+    const card=act.closest('.step');if(!card)return;
+    const i=+card.dataset.idx;
+    if(act.dataset.act==='check')checkStage(i,card);else showAnswer(i,card);
+  }
+});
+document.addEventListener('focusin',e=>{
+  const inp=e.target;
+  if(!(inp.matches&&inp.matches('#steps input.cell')))return;
+  const card=inp.closest('.step');if(!card)return;
+  const st=S.stages[+card.dataset.idx];
+  const hb=card.querySelector('.hintbox');
+  if(hb&&st&&st.input)hb.innerHTML='💡 '+st.input.hint(+inp.dataset.r,+inp.dataset.c);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  const inp=e.target;
+  if(inp.matches&&inp.matches('#steps input.cell')){
+    const card=inp.closest('.step');if(card)checkStage(+card.dataset.idx,card);
+  }else if(inp.matches&&inp.matches('#matInput input')){
+    start();
+  }
+});
+$('#tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(t&&t.dataset.method!==S.method)setMethod(t.dataset.method)});
+$('#sizeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled&&+b.dataset.size!==S.n)setSize(+b.dataset.size)});
+$('#modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&b.dataset.mode!==S.mode)setMode(b.dataset.mode)});
+$('#btnStart').addEventListener('click',start);
+$('#btnRandom').addEventListener('click',()=>{fillMatrix(randomMatrix(S.n));const m=$('#setupMsg');m.className='msg';m.textContent='';resetProgress();render()});
+$('#btnClear').addEventListener('click',()=>{document.querySelectorAll('#matInput input').forEach(i=>{i.value='';i.classList.remove('bad')});const m=$('#setupMsg');m.className='msg';m.textContent='';resetProgress();render()});
+
+/* ---------- Инициализация ---------- */
+buildMatInput();
+fillMatrix([[F(2),F(1),F(1)],[F(1),F(3),F(2)],[F(1),F(0),F(0)]]);
+$('#theoryBody').innerHTML=theoryHTML('gauss');
+render();
+})();
+</script>
+</body>
+</html>
